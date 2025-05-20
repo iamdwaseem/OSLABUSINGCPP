@@ -179,10 +179,20 @@ void priority_p(vector<Process> p) {
 }
 
 // Round Robin Scheduling
-void round_robin(vector<Process> p, int quantum) {
+#include <iostream>
+#include <vector>
+#include <queue>
+using namespace std;
+
+struct Process {
+    int pid, at, bt, st, ct, tat, wt;
+};
+
+void round_robin(vector<Process>& p, int quantum) {
     int n = p.size();
-    vector<int> rt(n);
-    for (int i = 0; i < n; ++i) rt[i] = p[i].bt;
+    vector<int> rt(n);                     // Remaining time
+    for (int i = 0; i < n; ++i)
+        rt[i] = p[i].bt;
 
     queue<int> q;
     vector<bool> in_queue(n, false);
@@ -193,39 +203,33 @@ void round_robin(vector<Process> p, int quantum) {
     cout << "PID\tAT\tBT\tWT\tTAT\n";
 
     while (completed < n) {
-        for (int i = 0; i < n; ++i) {
-            if (p[i].at <= time && !in_queue[i] && rt[i] > 0) {
-                q.push(i);
-                in_queue[i] = true;
-            }
-        }
+        // Add arrived processes to queue
+        for (int i = 0; i < n; ++i)
+            if (p[i].at <= time && rt[i] > 0 && !in_queue[i])
+                q.push(i), in_queue[i] = true;
 
         if (q.empty()) {
-            time++;
+            time++;  // If no process is ready, move time forward
             continue;
         }
 
         int i = q.front(); q.pop();
 
-        if (!started[i]) {
-            p[i].st = time;
-            started[i] = true;
-        }
+        if (!started[i])
+            p[i].st = time, started[i] = true;
 
-        int exec_time = min(quantum, rt[i]);
-        rt[i] -= exec_time;
-        time += exec_time;
+        int run_time = min(quantum, rt[i]);
+        rt[i] -= run_time;
+        time += run_time;
 
-        for (int j = 0; j < n; ++j) {
-            if (p[j].at <= time && !in_queue[j] && rt[j] > 0) {
-                q.push(j);
-                in_queue[j] = true;
-            }
-        }
+        // Add new processes that have arrived during this time
+        for (int j = 0; j < n; ++j)
+            if (p[j].at <= time && rt[j] > 0 && !in_queue[j])
+                q.push(j), in_queue[j] = true;
 
-        if (rt[i] > 0) {
-            q.push(i);
-        } else {
+        if (rt[i] > 0)
+            q.push(i);  // Not done yet, put back
+        else {
             p[i].ct = time;
             p[i].tat = p[i].ct - p[i].at;
             p[i].wt = p[i].tat - p[i].bt;
@@ -233,10 +237,11 @@ void round_robin(vector<Process> p, int quantum) {
         }
     }
 
-    for (int i = 0; i < n; ++i) {
-        cout << "P" << p[i].pid << "\t" << p[i].at << "\t" << p[i].bt << "\t" << p[i].wt << "\t" << p[i].tat << "\n";
-    }
+    // Print results
+    for (auto& pr : p)
+        cout << "P" << pr.pid << "\t" << pr.at << "\t" << pr.bt << "\t" << pr.wt << "\t" << pr.tat << "\n";
 }
+
 
 int main() {
     int n;
